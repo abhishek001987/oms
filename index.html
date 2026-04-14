@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WhatsBake Admin Dashboard</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="login-screen" id="login-screen">
+    <div class="login-panel" id="login-panel">
+      <div class="login-header">
+        <div class="brand-avatar brand-large">WB</div>
+        <div>
+          <h1>WhatsBake Admin</h1>
+          <p>Choose your role to continue.</p>
+        </div>
+      </div>
+      <div class="auth-grid">
+        <button class="auth-card" id="admin-select">
+          <span class="auth-icon">A</span>
+          <strong>Admin</strong>
+          <p>Enter the secure admin dashboard with password access.</p>
+        </button>
+        <button class="auth-card" id="outlet-select">
+          <span class="auth-icon">O</span>
+          <strong>Outlet</strong>
+          <p>Login to review outlet orders and updates.</p>
+        </button>
+      </div>
+    </div>
+
+    <div class="outlet-selection hidden" id="outlet-selection">
+      <div class="login-header">
+        <div class="brand-avatar brand-large">OL</div>
+        <div>
+          <h1>Outlet Login</h1>
+          <p>Choose your outlet and enter the outlet password.</p>
+        </div>
+      </div>
+      <div class="auth-grid outlet-grid">
+        <button class="auth-card outlet-login-card" data-outlet="Outlet 31">
+          <span class="auth-icon">31</span>
+          <strong>Outlet 31</strong>
+          <p>Viewer access only.</p>
+        </button>
+        <button class="auth-card outlet-login-card" data-outlet="Outlet 34">
+          <span class="auth-icon">34</span>
+          <strong>Outlet 34</strong>
+          <p>Viewer access only.</p>
+        </button>
+        <button class="auth-card outlet-login-card" data-outlet="Outlet 42">
+          <span class="auth-icon">42</span>
+          <strong>Outlet 42</strong>
+          <p>Viewer access only.</p>
+        </button>
+        <button class="auth-card outlet-login-card" data-outlet="Outlet 88">
+          <span class="auth-icon">88</span>
+          <strong>Outlet 88</strong>
+          <p>Viewer access only.</p>
+        </button>
+      </div>
+      <div class="modal-actions">
+        <button class="secondary-btn" id="outlet-back" type="button">Back</button>
+      </div>
+    </div>
+
+    <div class="password-modal hidden" id="admin-password-modal">
+      <div class="modal-card">
+        <h2>Admin password required</h2>
+        <input id="admin-password-input" type="password" placeholder="Admin password">
+        <div class="modal-actions">
+          <button class="secondary-btn" id="admin-password-cancel" type="button">Cancel</button>
+          <button class="primary-btn" id="admin-password-submit" type="button">Login</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="detail-modal hidden" id="order-detail-modal">
+    <div class="modal-card detail-card">
+      <div class="detail-header">
+        <h2 id="detail-order-title">Order Details</h2>
+        <button class="close-button" id="order-detail-close" type="button">×</button>
+      </div>
+      <div class="detail-grid">
+        <div>
+          <strong>Customer</strong>
+          <p id="detail-customer"></p>
+          <input id="detail-customer-input" class="hidden" type="text">
+        </div>
+        <div>
+          <strong>Mobile</strong>
+          <p id="detail-mobile"></p>
+          <input id="detail-mobile-input" class="hidden" type="tel">
+        </div>
+        <div>
+          <strong>Outlet</strong>
+          <p id="detail-outlet"></p>
+        </div>
+        <div>
+          <strong>Amount</strong>
+          <p id="detail-amount"></p>
+          <input id="detail-amount-input" class="hidden" type="number" min="0" step="0.01">
+        </div>
+        <div>
+          <strong>Item</strong>
+          <p id="detail-item"></p>
+          <input id="detail-item-input" class="hidden" type="text">
+        </div>
+        <div>
+          <strong>Quantity</strong>
+          <p id="detail-quantity"></p>
+          <input id="detail-quantity-input" class="hidden" type="text">
+        </div>
+        <div>
+          <strong>Type</strong>
+          <p id="detail-delivery-type"></p>
+          <select id="detail-delivery-type-input" class="hidden">
+            <option>Pickup</option>
+            <option>Delivery</option>
+          </select>
+        </div>
+        <div>
+          <strong>Order Date</strong>
+          <p id="detail-order-date"></p>
+          <input id="detail-order-date-input" class="hidden" type="date">
+        </div>
+        <div>
+          <strong>Order Time</strong>
+          <p id="detail-order-time"></p>
+          <div id="detail-order-time-input" class="hidden time-input-group">
+            <select id="detail-order-time-hour">
+              <option value="">HH</option>
+              <option>01</option><option>02</option><option>03</option><option>04</option><option>05</option><option>06</option>
+              <option>07</option><option>08</option><option>09</option><option>10</option><option>11</option><option>12</option>
+            </select> :
+            <select id="detail-order-time-minute">
+              <option value="">MM</option>
+              <option>00</option><option>05</option><option>10</option><option>15</option><option>20</option><option>25</option>
+              <option>30</option><option>35</option><option>40</option><option>45</option><option>50</option><option>55</option>
+            </select>
+            <select id="detail-order-time-ampm">
+              <option>AM</option><option>PM</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <strong>Delivery Date</strong>
+          <p id="detail-date"></p>
+          <input id="detail-date-input" class="hidden" type="date">
+        </div>
+        <div>
+          <strong>Delivery Time</strong>
+          <p id="detail-time"></p>
+          <div id="detail-time-input" class="hidden time-input-group">
+            <select id="detail-time-hour">
+              <option value="">HH</option>
+              <option>01</option><option>02</option><option>03</option><option>04</option><option>05</option><option>06</option>
+              <option>07</option><option>08</option><option>09</option><option>10</option><option>11</option><option>12</option>
+            </select> :
+            <select id="detail-time-minute">
+              <option value="">MM</option>
+              <option>00</option><option>05</option><option>10</option><option>15</option><option>20</option><option>25</option>
+              <option>30</option><option>35</option><option>40</option><option>45</option><option>50</option><option>55</option>
+            </select>
+            <select id="detail-time-ampm">
+              <option>AM</option><option>PM</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <strong>Priority</strong>
+          <p id="detail-priority"></p>
+          <select id="detail-priority-input" class="hidden">
+            <option value="Low">Low</option>
+            <option value="Normal">Normal</option>
+            <option value="High">High</option>
+            <option value="Critical">Critical</option>
+          </select>
+        </div>
+        <div>
+          <strong>Payment Status</strong>
+          <p id="detail-payment-status"></p>
+          <select id="detail-payment-status-input" class="hidden">
+            <option value="Pending">Pending</option>
+            <option value="PartiallyPaid">Partially Paid</option>
+            <option value="Paid">Paid</option>
+          </select>
+        </div>
+        <div>
+          <strong>Assigned Partner</strong>
+          <p id="detail-partner"></p>
+          <select id="detail-partner-input" class="hidden">
+            <option value="">Unassigned</option>
+          </select>
+        </div>
+      </div>
+      <div class="detail-grid detail-info-block">
+        <div>
+          <strong>Details</strong>
+          <p id="detail-info"></p>
+          <textarea id="detail-info-input" class="hidden" rows="3" placeholder="Full address or notes"></textarea>
+        </div>
+      </div>
+      <div class="detail-status-row">
+        <label id="detail-status-label-container">Status<p id="detail-status-label"></p></label>
+        <label id="detail-status-select-container">Status<select id="detail-status"><option value="Preparing">Preparing</option><option value="Ready">Ready</option><option value="OutForDelivery">Out for Delivery</option><option value="Delivered">Delivered</option><option value="Delayed">Delayed</option></select></label>
+      </div>
+      <div class="modal-actions">
+        <button class="danger-btn" id="detail-delete-button" type="button">Delete Order</button>
+        <button class="secondary-btn" id="detail-edit-button" type="button">Edit</button>
+        <button class="primary-btn" id="detail-save-button" type="button">Save</button>
+      </div>
+    </div>
+  </div>
+  <div class="detail-modal hidden" id="delivery-notification">
+    <div class="modal-card detail-card">
+      <div class="detail-header">
+        <h2>Delivery Reminder</h2>
+      </div>
+      <div class="detail-grid">
+        <p id="delivery-notification-message"></p>
+      </div>
+      <div class="modal-actions">
+        <button class="primary-btn" id="delivery-notification-ok" type="button">OK</button>
+      </div>
+    </div>
+  </div>
+  <div class="detail-modal hidden" id="whatsapp-confirmation-modal">
+    <div class="modal-card detail-card">
+      <div class="detail-header">
+        <h2>Send Confirmation Message</h2>
+        <button class="close-button" id="whatsapp-confirmation-close" type="button">x</button>
+      </div>
+      <div class="whatsapp-card">
+        <div class="whatsapp-card-header">
+          <span class="whatsapp-icon">WA</span>
+          <div>
+            <strong id="whatsapp-customer-name">Customer</strong>
+            <p id="whatsapp-customer-number">Phone</p>
+          </div>
+        </div>
+        <textarea id="whatsapp-message-preview" rows="12" readonly></textarea>
+      </div>
+      <div class="modal-actions">
+        <button class="secondary-btn" id="whatsapp-confirmation-cancel" type="button">Later</button>
+        <button class="primary-btn whatsapp-launch-btn" id="whatsapp-confirmation-send" type="button">Open WhatsApp</button>
+      </div>
+    </div>
+  </div>
+  <div class="dashboard-shell hidden" id="app-shell">
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <div class="brand-avatar">WB</div>
+        <div>
+          <h1>WhatsBake</h1>
+          <p>Broomies</p>
+        </div>
+      </div>
+
+      <div class="sidebar-user">
+        <div class="user-avatar">A</div>
+        <div>
+          <strong>Admin</strong>
+          <p>Welcome back</p>
+        </div>
+      </div>
+
+      <nav class="nav-list">
+        <button class="nav-item active" data-view="dashboard"><span>D</span>Dashboard</button>
+        <button class="nav-item role-admin-only" data-view="add-order"><span>+</span>Add Order</button>
+        <button class="nav-item" data-view="delivery"><span>V</span>Delivery</button>
+        <button class="nav-item" data-view="outlets"><span>O</span>Outlets</button>
+        <button class="nav-item role-admin-only" data-view="partners"><span>P</span>Partners</button>
+        <button class="nav-item" data-view="reports"><span>R</span>Reports</button>
+        <button class="nav-item role-admin-only" data-view="google-sheet"><span>S</span>Google Sheet</button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="footer-card">
+          <span>Today Delivered</span>
+          <strong id="sidebar-delivered-count">0</strong>
+        </div>
+        <button class="secondary-btn logout-btn" id="logout-button">Logout</button>
+      </div>
+    </aside>
+
+    <div class="sidebar-backdrop hidden" id="sidebar-backdrop"></div>
+
+    <main class="main-panel">
+      <header class="topbar">
+        <div class="topbar-left">
+          <button class="menu-toggle" id="menu-toggle" aria-label="Open sidebar">☰</button>
+          <div>
+            <h1 id="page-title">Dashboard</h1>
+            <p id="page-subtitle">Live order management in one place.</p>
+          </div>
+        </div>
+        <div class="topbar-actions">
+          <button class="secondary-btn" id="filter-button">Filter</button>
+          <button class="secondary-btn" id="export-button">Export</button>
+          <button class="secondary-btn" id="topbar-logout-button">Logout</button>
+        </div>
+      </header>
+
+      <div class="panel panel-filters hidden" id="dashboard-filter-panel">
+        <div class="panel-row">
+          <input id="dashboard-search" type="search" placeholder="Search orders...">
+          <select id="dashboard-status-filter"><option value="all">All Status</option><option value="Preparing">Preparing</option><option value="OutForDelivery">Out for Delivery</option><option value="Delivered">Delivered</option></select>
+          <select id="dashboard-outlet-filter"><option value="all">All Outlets</option></select>
+        </div>
+      </div>
+
+      <section class="view active" id="view-dashboard">
+        <div class="dashboard-grid">
+          <div class="dashboard-stats">
+            <article class="stat-card gradient-1"><span>Total</span><strong id="stat-total">0</strong></article>
+            <article class="stat-card gradient-3"><span>Preparing</span><strong id="stat-preparing">0</strong></article>
+            <article class="stat-card gradient-2"><span>Ready</span><strong id="stat-ready">0</strong></article>
+            <article class="stat-card gradient-4"><span>Out for Delivery</span><strong id="stat-delivery">0</strong></article>
+            <article class="stat-card gradient-6"><span>Delivered</span><strong id="stat-delivered">0</strong></article>
+            <article class="stat-card gradient-5"><span>Late Risk</span><strong id="stat-risk">0</strong></article>
+          </div>
+
+          <div class="panel outlet-report-panel hidden" id="outlet-report-panel">
+            <h2>Outlet Reports</h2>
+            <div class="dashboard-stats report-summary">
+              <article class="stat-card gradient-2"><span>Orders</span><strong id="outlet-report-total">0</strong></article>
+              <article class="stat-card gradient-3"><span>Revenue</span><strong id="outlet-report-revenue">₹0</strong></article>
+              <article class="stat-card gradient-4"><span>Pending</span><strong id="outlet-report-pending">0</strong></article>
+            </div>
+          </div>
+        </div>
+
+        <div class="dashboard-tabs" id="dashboard-tabs">
+          <button class="dashboard-tab active" type="button" data-tab="today">Today</button>
+          <button class="dashboard-tab" type="button" data-tab="tomorrow">Tomorrow</button>
+          <button class="dashboard-tab" type="button" data-tab="future">Future</button>
+          <button class="dashboard-tab" type="button" data-tab="delivered">Delivered</button>
+        </div>
+
+        <div class="overview-grid">
+          <div class="panel">
+            <div class="panel-header">
+              <h2>Late Order Radar</h2>
+              <span class="surface-badge" id="risk-count-badge">0 alerts</span>
+            </div>
+            <div class="stack-list" id="risk-list"></div>
+          </div>
+          <div class="panel">
+            <div class="panel-header">
+              <h2>Workflow</h2>
+              <span class="surface-badge">Connected pipeline</span>
+            </div>
+            <div class="workflow-board" id="workflow-board"></div>
+          </div>
+        </div>
+
+        <div class="orders-grid" id="dashboard-order-list"></div>
+      </section>
+
+      <section class="view" id="view-add-order">
+        <div class="panel panel-form">
+          <h2>New Order</h2>
+          <form id="order-form" class="form-grid">
+            <label>Order No<input id="order-number" type="text" readonly></label>
+            <label>Outlet<select id="order-outlet"></select></label>
+            <label>Customer Name<input id="order-customer" type="text" placeholder="Customer name"></label>
+            <label>Amount<input id="order-amount" type="number" min="0" step="0.01" placeholder="Order amount"></label>
+            <label>Order Date<input id="order-date" type="date" list="date-suggestions"></label>
+            <label>Order Time<div class="time-input-group">
+              <select id="order-time-hour">
+                <option value="">HH</option>
+                <option>01</option><option>02</option><option>03</option><option>04</option><option>05</option><option>06</option>
+                <option>07</option><option>08</option><option>09</option><option>10</option><option>11</option><option>12</option>
+              </select> :
+              <select id="order-time-minute">
+                <option value="">MM</option>
+                <option>00</option><option>05</option><option>10</option><option>15</option><option>20</option><option>25</option>
+                <option>30</option><option>35</option><option>40</option><option>45</option><option>50</option><option>55</option>
+              </select>
+              <select id="order-time-ampm">
+                <option>AM</option><option>PM</option>
+              </select>
+            </div></label>
+            <label>Item<input id="order-item" type="text" placeholder="Cake or custom item" list="item-suggestions"></label>
+            <label>Quantity<input id="order-quantity" type="text" placeholder="1 kg, 2 pcs" list="quantity-suggestions"></label>
+            <label>Mobile No.<input id="order-mobile" type="tel" placeholder="Mobile number"></label>
+            <label>Delivery Type<select id="order-delivery-type"><option>Pickup</option><option>Delivery</option></select></label>
+            <label>Informed By<input id="order-informed-by" type="text" placeholder="Who informed" list="informed-by-suggestions"></label>
+            <label>Address<input id="order-address" type="text" placeholder="Address" list="address-suggestions"></label>
+            <label>Delivery Date<input id="order-delivery-date" type="date" list="date-suggestions"></label>
+            <label>Delivery Time<div class="time-input-group">
+              <select id="order-delivery-time-hour">
+                <option value="">HH</option>
+                <option>01</option><option>02</option><option>03</option><option>04</option><option>05</option><option>06</option>
+                <option>07</option><option>08</option><option>09</option><option>10</option><option>11</option><option>12</option>
+              </select> :
+              <select id="order-delivery-time-minute">
+                <option value="">MM</option>
+                <option>00</option><option>05</option><option>10</option><option>15</option><option>20</option><option>25</option>
+                <option>30</option><option>35</option><option>40</option><option>45</option><option>50</option><option>55</option>
+              </select>
+              <select id="order-delivery-time-ampm">
+                <option>AM</option><option>PM</option>
+              </select>
+            </div></label>
+            <label>Full Address<textarea id="order-full-address" rows="2" placeholder="Full address"></textarea></label>
+            <label>Remark<textarea id="order-remark" rows="3" placeholder="Special instructions..."></textarea></label>
+            <label>Payment Type<select id="order-payment-type"><option>Cash</option><option>UPI</option><option>Part Payment</option></select></label>
+            <label>Payment Status<select id="order-payment-status"><option value="Pending">Pending</option><option value="PartiallyPaid">Partially Paid</option><option value="Paid">Paid</option></select></label>
+            <label>Priority<select id="order-priority"><option value="Normal">Normal</option><option value="High">High</option><option value="Critical">Critical</option><option value="Low">Low</option></select></label>
+            <label>Assign Partner<select id="order-partner"><option value="">Unassigned</option></select></label>
+            <div id="part-payment-fields" style="display: none;">
+              <label>Cash<input id="order-cash" type="number" min="0" placeholder="Cash amount"></label>
+              <label>Online/Advance<input id="order-online" type="number" min="0" placeholder="Online/Advance amount"></label>
+            </div>
+            <div class="form-actions full-width">
+              <button type="reset" class="secondary-btn">Reset</button>
+              <button type="submit" class="primary-btn">Submit</button>
+            </div>
+            <datalist id="item-suggestions"></datalist>
+            <datalist id="address-suggestions"></datalist>
+            <datalist id="informed-by-suggestions"></datalist>
+            <datalist id="date-suggestions"></datalist>
+            <datalist id="time-suggestions"></datalist>
+            <datalist id="quantity-suggestions"></datalist>
+          </form>
+        </div>
+      </section>
+
+      <section class="view" id="view-delivery">
+        <div class="dashboard-stats report-summary" id="delivery-summary"></div>
+        <div class="panel panel-filters">
+          <div class="panel-row">
+            <select id="delivery-outlet-filter"><option value="all">All Outlets</option></select>
+            <select id="delivery-status-filter"><option value="all">All Status</option><option value="Preparing">Preparing</option><option value="Ready">Ready</option><option value="OutForDelivery">Out for Delivery</option><option value="Delivered">Delivered</option><option value="Delayed">Delayed</option></select>
+          </div>
+        </div>
+        <div class="orders-grid" id="delivery-order-list"></div>
+      </section>
+
+      <section class="view" id="view-outlets">
+        <div class="dashboard-stats outlets-summary" id="outlet-summary"></div>
+        <div class="panel">
+          <h2>Outlet List</h2>
+          <div class="table-container">
+            <table>
+              <thead><tr><th>Outlet</th><th>Active</th><th>Revenue</th><th>Pending</th></tr></thead>
+              <tbody id="outlet-table-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section class="view" id="view-partners">
+        <div class="panel">
+          <h2>Delivery Partners</h2>
+          <div class="partners-grid" id="partner-list"></div>
+        </div>
+      </section>
+
+      <section class="view" id="view-reports">
+        <div class="panel panel-filters report-filters">
+          <div class="panel-row">
+            <label>Order Date From<input id="report-order-from" type="date" list="date-suggestions"></label>
+            <label>Order Date To<input id="report-order-to" type="date" list="date-suggestions"></label>
+            <label>Delivery Date From<input id="report-delivery-from" type="date" list="date-suggestions"></label>
+            <label>Delivery Date To<input id="report-delivery-to" type="date" list="date-suggestions"></label>
+            <label>Outlet<select id="report-outlet" multiple size="3"></select></label>
+            <label>Status<select id="report-status"><option value="all">All</option><option value="Preparing">Preparing</option><option value="Ready">Ready</option><option value="OutForDelivery">Out for Delivery</option><option value="Delivered">Delivered</option><option value="Delayed">Delayed</option></select></label>
+            <label>Payment Type<select id="report-payment-type"><option value="all">All</option><option value="Cash">Cash</option><option value="UPI">UPI</option><option value="Part Payment">Part Payment</option></select></label>
+            <label>Delivery Type<select id="report-delivery-type"><option value="all">All</option><option value="Pickup">Pickup</option><option value="Delivery">Delivery</option></select></label>
+            <label>Delay Orders<input id="report-delay-orders" type="checkbox"></label>
+            <button class="secondary-btn" id="report-filter">Apply</button>
+          </div>
+        </div>
+        <div class="dashboard-stats report-stats">
+          <article class="stat-card gradient-1"><span>Total Orders</span><strong id="report-total">0</strong></article>
+          <article class="stat-card gradient-2"><span>Revenue</span><strong id="report-revenue">₹0</strong></article>
+          <article class="stat-card gradient-3"><span>Pending Pay</span><strong id="report-pending">₹0</strong></article>
+          <article class="stat-card gradient-4"><span>On Time</span><strong id="report-on-time">0%</strong></article>
+          <article class="stat-card gradient-5"><span>Late Orders</span><strong id="report-late">0</strong></article>
+        </div>
+        <div class="panel report-charts">
+          <h2>Order Analytics</h2>
+          <div class="chart-container">
+            <div class="chart-pie">
+              <h3>Outlet-wise Orders</h3>
+              <canvas id="outlet-pie-chart"></canvas>
+              <div class="chart-legend" id="outlet-pie-legend"></div>
+            </div>
+            <div class="chart-pie">
+              <h3>Order Status</h3>
+              <canvas id="status-pie-chart"></canvas>
+              <div class="chart-legend" id="status-pie-legend"></div>
+            </div>
+            <div class="chart-pie">
+              <h3>Payment Status</h3>
+              <canvas id="payment-pie-chart"></canvas>
+              <div class="chart-legend" id="payment-pie-legend"></div>
+            </div>
+          </div>
+        </div>
+        <div class="panel report-table-panel">
+          <div class="panel-header">
+            <h2>Order History</h2>
+            <div class="export-options">
+              <button class="secondary-btn" id="report-export-csv" type="button">Export CSV</button>
+              <button class="secondary-btn" id="report-export-pdf" type="button">Export PDF</button>
+              <button class="secondary-btn" id="report-export-excel" type="button">Export Excel</button>
+            </div>
+          </div>
+          <div class="table-container">
+            <table>
+              <thead><tr><th>#</th><th>Order Date</th><th>Delivery Date</th><th>Expected Time</th><th>Actual Time</th><th>Late (min)</th><th>Payment Status</th><th>Cash</th><th>Online</th><th>Total</th><th>Due Balance</th></tr></thead>
+              <tbody id="report-table-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section class="view" id="view-google-sheet">
+        <div class="panel panel-form">
+          <h2>Google Sheet Sync</h2>
+          <label>Sheet URL<input id="sheet-url" type="url" placeholder="Paste Google Apps Script URL"></label>
+          <div class="form-actions">
+            <button type="button" class="secondary-btn" id="sheet-save">Save URL</button>
+            <button type="button" class="primary-btn" id="sheet-sync">Sync Orders</button>
+          </div>
+          <div class="sheet-status" id="sheet-status"></div>
+          <div class="sheet-script-card">
+            <div class="panel-header">
+              <h3>Apps Script Code</h3>
+              <button type="button" class="secondary-btn" id="sheet-script-copy">Copy Script</button>
+            </div>
+            <p class="hint">Paste this into Google Apps Script, deploy it as a Web App, then save the deployed URL above.</p>
+            <textarea id="sheet-script-code" rows="18" readonly></textarea>
+          </div>
+          <p class="hint">This page is for admin access and keeps the same UI as the rest of the app.</p>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="toast" id="app-toast"></div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+  <script src="sample-data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
