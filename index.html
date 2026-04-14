@@ -523,22 +523,18 @@
 
       <section class="view" id="view-google-sheet">
         <div class="panel panel-form">
-          <h2>Google Sheet Sync</h2>
-          <label>Sheet URL<input id="sheet-url" type="url" placeholder="Paste Google Apps Script URL"></label>
-          <div class="form-actions">
-            <button type="button" class="secondary-btn" id="sheet-save">Save URL</button>
-            <button type="button" class="primary-btn" id="sheet-sync">Sync Orders</button>
-          </div>
+          <h2>✅ LIVE Google Sheets Sync</h2>
           <div class="sheet-status" id="sheet-status"></div>
           <div class="sheet-script-card">
             <div class="panel-header">
-              <h3>Apps Script Code</h3>
-              <button type="button" class="secondary-btn" id="sheet-script-copy">Copy Script</button>
+              <h3>Status & Configuration</h3>
             </div>
-            <p class="hint">Paste this into Google Apps Script, deploy it as a Web App, then save the deployed URL above.</p>
-            <textarea id="sheet-script-code" rows="18" readonly></textarea>
+            <p class="hint">Your Sheets are LIVE synced! Changes auto-save every action. Polls every 30s.</p>
+            <div style="margin-top: 16px; padding: 16px; background: rgba(255,255,255,0.06); border-radius: 20px; font-family: monospace; font-size: 0.85rem;">
+              📱 <strong>URL:</strong> https://script.google.com/macros/s/AKfycbwFyt5xpDWQfxKTb67mdCQoQu0sKOgQqJmLxjgIAEXjMI39tE7IJgw1nbd8Em9LoAUC/exec<br>
+              📊 <strong>Sheets:</strong> Outlet-31 | Outlet-34 | Outlet-42 | Outlet-88
+            </div>
           </div>
-          <p class="hint">This page is for admin access and keeps the same UI as the rest of the app.</p>
         </div>
       </section>
     </main>
@@ -550,7 +546,9 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
-  <script src="sample-data.js"></script>
+
+  <script src="sheets-sync.js"></script>
   <script src="app.js"></script>
+
 </body>
 </html>

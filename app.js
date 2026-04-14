@@ -1,14 +1,15 @@
-const sampleOrders = window.APP_SAMPLE_ORDERS || [];
-
-const sampleOutlets = window.APP_SAMPLE_OUTLETS || [];
+const sampleOutlets = [
+  { name: "Outlet 31" },
+  { name: "Outlet 34" },
+  { name: "Outlet 42" },
+  { name: "Outlet 88" }
+];
 
 const samplePartners = [];
 
-const DATA_VERSION = "whatsbake-v5";
+const DATA_VERSION = "whatsbake-v6-sheets";
 const AUTH_KEY = "whatsbake-auth-v5";
-const STORAGE_KEY = "whatsbake-data-v5";
-const SHEET_URL_KEY = "whatsbake-sheet-url";
-const SHEET_SYNC_KEY = "whatsbake-sheet-last-sync";
+const STORAGE_KEY = "whatsbake-data-v6";
 const ADMIN_PASSWORD = "Admin@2026!";
 const OUTLET_PASSWORDS = {
   "Outlet 31": "Outlet31!2026",
@@ -420,7 +421,7 @@ function initListeners() {
   });
 }
 
-function loadState() {
+async function loadState() {
   const version = localStorage.getItem("whatsbake-version");
   if (version !== DATA_VERSION) {
     localStorage.removeItem(STORAGE_KEY);
@@ -428,35 +429,17 @@ function loadState() {
     localStorage.setItem("whatsbake-version", DATA_VERSION);
   }
 
-  const stored = localStorage.getItem(STORAGE_KEY);
-  if (stored) {
-    try {
-      const parsed = JSON.parse(stored);
-      state.orders = (parsed.orders || []).map(normalizeOrder);
-      state.outlets = (parsed.outlets || sampleOutlets).map((outlet) => ({ ...outlet }));
-      state.partners = (parsed.partners || samplePartners).map((partner) => ({ ...partner }));
-      state.nextOrderId = getNextOrderId(state.orders);
-    } catch (error) {
-      hydrateSampleState();
-    }
+  // Google Sheets LIVE LOAD
+  if (typeof window.SheetsSync?.loadAll === 'function') {
+    const count = await window.SheetsSync.loadAll();
+    console.log(`Loaded ${count} live orders from Google Sheets`);
   } else {
-    hydrateSampleState();
+    hydrateSampleState(); // Fallback
   }
 
-  const auth = localStorage.getItem(AUTH_KEY);
-  if (auth) {
-    try {
-      const parsed = JSON.parse(auth);
-      state.loggedIn = Boolean(parsed.loggedIn);
-      state.role = parsed.role || null;
-      state.outletName = parsed.outletName || null;
-    } catch (error) {
-      state.loggedIn = false;
-      state.role = null;
-      state.outletName = null;
-    }
-  }
-}
+  state.outlets = sampleOutlets.map((outlet) => ({ ...outlet }));
+  state.partners = samplePartners.map((partner) => ({ ...partner }));
+  state.nextOrderId = getNextOrderId(state.orders);
 
 function hydrateSampleState() {
   const bootstrapOrders = Array.isArray(window.APP_SAMPLE_ORDERS) ? window.APP_SAMPLE_ORDERS : [];
@@ -466,9 +449,18 @@ function hydrateSampleState() {
   state.nextOrderId = getNextOrderId(state.orders);
 }
 
-function saveState() {
+async function saveState() {
   state.nextOrderId = getNextOrderId(state.orders);
-
+  
+  // Auto-save to Google Sheets
+  if (typeof window.SheetsSync?.saveAll === 'function') {
+    const success = await window.SheetsSync.saveAll();
+    if (success) {
+      console.log('Auto-saved all changes to Google Sheets');
+    }
+  }
+  
+  // Keep local backup
   localStorage.setItem(
     STORAGE_KEY,
     JSON.stringify({
@@ -1396,12 +1388,11 @@ function renderCharts(filtered) {
 }
 
 function renderGoogleSheet() {
-  controls.sheetUrl.value = localStorage.getItem(SHEET_URL_KEY) || "";
-  controls.sheetScriptCode.value = GOOGLE_APPS_SCRIPT_TEMPLATE;
-  const lastSync = localStorage.getItem(SHEET_SYNC_KEY);
+  const status = typeof window.SheetsSync?.status === 'function' ? window.SheetsSync.status() : {};
   controls.sheetStatus.innerHTML = `
-    <div class="surface-badge">Orders in snapshot ${state.orders.length}</div>
-    <div class="surface-badge">${lastSync ? `Last sync ${new Date(lastSync).toLocaleString("en-IN")}` : "Sync not run yet"}</div>
+    <div class="surface-badge ${status.connected ? 'success' : ''}">✅ LIVE Sheets: ${state.orders.length} orders</div>
+    <div class="surface-badge">${status.lastSync || 'Sync starting...'}</div>
+    <div class="surface-badge">Auto-sync: ${status.pollInterval || 'N/A'}</div>
   `;
 }
 
@@ -2249,6 +2240,12 @@ function stopNotificationSound() {
 function init() {
   initControls();
   initListeners();
+  
+  // Start Sheets auto-sync
+  if (typeof window.SheetsSync?.start === 'function') {
+    window.SheetsSync.start();
+  }
+  
   loadState();
   prepareOrderForm();
   renderApp();
@@ -2257,5 +2254,11 @@ function init() {
   if (state.loggedIn) showAppShell();
   else showLoginScreen();
 }
+
+window.addEventListener('beforeunload', () => {
+  if (typeof window.SheetsSync?.stop === 'function') {
+    window.SheetsSync.stop();
+  }
+});
 
 window.addEventListener("DOMContentLoaded", init);
