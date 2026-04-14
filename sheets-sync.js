@@ -5,22 +5,16 @@ let syncInterval = null;
 let lastSyncTime = null;
 
 async function loadAllOrdersFromSheets() {
-  const outlets = ['Outlet 31', 'Outlet 34', 'Outlet 42', 'Outlet 88'];
-  state.orders = [];
-  
-  for (const outletName of outlets) {
-    try {
-      const response = await fetch(`${SHEET_URL}?action=getOutletOrders&amp;outlet=${encodeURIComponent(outletName)}`);
-      if (response.ok) {
-        const result = await response.json();
-        if (result.ok) {
-          const outletOrders = (result.orders || []).map(normalizeOrder);
-          state.orders.push(...outletOrders.map(order => ({...order, outlet: outletName})));
-        }
+  try {
+    const response = await fetch(`${SHEET_URL}?action=orders`);
+    if (response.ok) {
+      const result = await response.json();
+      if (result.ok && Array.isArray(result.orders)) {
+        state.orders = result.orders.map(normalizeOrder);
       }
-    } catch (error) {
-      console.warn(`Failed to load ${outletName} from Sheets:`, error);
     }
+  } catch (error) {
+    console.warn(`Failed to load from Sheets:`, error);
   }
   
   state.orders.sort((a, b) => Number(b.id) - Number(a.id));
@@ -29,41 +23,30 @@ async function loadAllOrdersFromSheets() {
   return state.orders.length;
 }
 
-async function saveOutletOrders(outletName) {
-  const outletOrders = state.orders.filter(order => order.outlet === outletName);
+async function saveAllOrdersToSheets() {
+  // Refactored: Send all orders in one go, as the Google Apps Script's saveOrders_ clears the entire sheet.
+  // The previous saveOutletOrders approach would lead to data loss if called for each outlet.
   try {
     const response = await fetch(SHEET_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        action: 'syncOutletOrders',
-        outlet: outletName,
-        orders: outletOrders
+        action: 'syncOrders', // Google Apps Script expects 'syncOrders' to replace the whole sheet
+        orders: state.orders // Send all orders
       })
     });
     
     if (response.ok) {
       const result = await response.json();
       if (result.ok) {
-        console.log(`Saved ${result.saved} orders for ${outletName} to Sheets`);
+        console.log(`Saved ${result.saved} orders to Google Sheets`);
         return true;
       }
     }
   } catch (error) {
-    console.error(`Sheet save failed for ${outletName}:`, error);
+    console.error(`Sheet save failed:`, error);
   }
   return false;
-}
-
-async function saveAllOrdersToSheets() {
-  const outlets = [...new Set(state.orders.map(o => o.outlet))];
-  let successCount = 0;
-  
-  for (const outletName of outlets) {
-    if (await saveOutletOrders(outletName)) successCount++;
-  }
-  
-  return successCount === outlets.length;
 }
 
 function startAutoSync() {
@@ -100,9 +83,8 @@ function getSyncStatus() {
 window.SheetsSync = {
   loadAll: loadAllOrdersFromSheets,
   saveAll: saveAllOrdersToSheets,
-  saveOutlet: saveOutletOrders,
+  // saveOutlet: saveOutletOrders, // Removed as it's no longer used with the new sync strategy
   start: startAutoSync,
   stop: stopAutoSync,
   status: getSyncStatus
 };
-

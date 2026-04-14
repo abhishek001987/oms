@@ -1,8 +1,9 @@
-function renderDashboard() {
-  const search = controls.dashboardSearch.value.toLowerCase();
-  const statusFilter = controls.dashboardStatus.value;
+function renderDashboardView() { // Renamed to avoid conflict with app.js and clarify its role
+  const search = controls.dashboardSearch?.value.toLowerCase() || ''; // Added optional chaining and default
+  const statusFilter = controls.dashboardStatus?.value || 'all'; // Added optional chaining and default
+  const activeTab = state.dashboardTab || 'today';
   const visibleOrders = getVisibleOrders();
-  const selectedOrders = getDashboardOrdersByTab(visibleOrders, controls.dashboardActiveTab)
+  const selectedOrders = getDashboardOrdersByTab(visibleOrders, activeTab)
     .slice()
     .sort((a, b) => Number(a.id) - Number(b.id));
   const filtered = selectedOrders.filter(order => {
@@ -12,22 +13,23 @@ function renderDashboard() {
     return matchSearch && matchStatus;
   });
 
-  updateDashboardTabButtons();
-  controls.dashboardTabCount.textContent = filtered.length;
-  controls.dashboardTabLabel.textContent = getDashboardTabLabel(controls.dashboardActiveTab);
-
+  if (typeof updateDashboardTabButtons === 'function') updateDashboardTabButtons(); // Ensure function exists
+  if (controls.dashboardTabCount) controls.dashboardTabCount.textContent = filtered.length;
+  if (controls.dashboardTabLabel) controls.dashboardTabLabel.textContent = getDashboardTabLabel(activeTab);
+  
   const emptyMessage = selectedOrders.length
     ? 'No matching orders found.'
-    : `No ${getDashboardTabLabel(controls.dashboardActiveTab)} orders yet.`;
+    : `No ${getDashboardTabLabel(activeTab)} orders yet.`;
 
   controls.dashboardOrderList.innerHTML = filtered.map(orderCardHtml).join('') || `<p class="empty-state">${emptyMessage}</p>`;
-  renderSummary();
+  if (typeof renderSummary === 'function') renderSummary();
 
-  if (isOutletUser()) {
-    pageSubtitle.textContent = `Orders for ${state.currentUser.outlet}`;
-  } else {
-    pageSubtitle.textContent = 'Manage all outlets and orders from one place.';
-  }
+  // Removed pageSubtitle manipulation as it's handled by app.js switchView
+  // if (isOutletUser()) {
+  //   pageSubtitle.textContent = `Orders for ${state.currentUser.outlet}`;
+  // } else {
+  //   pageSubtitle.textContent = 'Manage all outlets and orders from one place.';
+  // }
 }
 
 function orderCardHtml(order) {
@@ -52,11 +54,6 @@ function orderCardHtml(order) {
       <div class="order-actions">
         <button data-action="edit" data-id="${order.id}">Open Order</button>
         <button data-action="delete" data-id="${order.id}">Delete</button>
-      </div>
-    </div>
-  `;
-}
-        <button class="whatsapp" data-action="whatsapp" data-id="${order.id}">WhatsApp</button>
       </div>
     </div>
   `;
@@ -99,18 +96,20 @@ function getDashboardTabCounts(orders) {
 }
 
 function updateDashboardTabButtons() {
-  const counts = getDashboardTabCounts(getVisibleOrders());
-  controls.dashboardTabs.forEach(button => {
-    const tab = button.dataset.tab;
-    button.textContent = `${getDashboardTabLabel(tab)} (${counts[tab] || 0})`;
-    button.classList.toggle('active', tab === controls.dashboardActiveTab);
-  });
+  if (controls.dashboardTabs) { // Added null check for controls.dashboardTabs
+    const counts = getDashboardTabCounts(getVisibleOrders());
+    controls.dashboardTabs.forEach(button => {
+      const tab = button.dataset.tab;
+      button.textContent = `${getDashboardTabLabel(tab)} (${counts[tab] || 0})`;
+      button.classList.toggle('active', tab === state.dashboardTab);
+    });
+  }
 }
 
 function updateDashboardTab(selectedTab) {
-  controls.dashboardActiveTab = selectedTab;
+  state.dashboardTab = selectedTab;
   controls.dashboardTabs.forEach(button => {
     button.classList.toggle('active', button.dataset.tab === selectedTab);
   });
-  renderDashboard();
+  renderDashboardView();
 }

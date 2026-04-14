@@ -142,10 +142,12 @@ function $(id) {
 function initControls() {
   controls.loginScreen = $("login-screen");
   controls.appShell = $("app-shell");
-  controls.adminSelect = $("admin-select");
-  controls.outletSelect = $("outlet-select");
+  controls.adminSelect = $("admin-select") || document.querySelector('[data-user="admin"]');
+  controls.outletSelect = $("outlet-select") || document.querySelector('.outlet-grid');
   controls.passwordModal = $("admin-password-modal");
-  controls.passwordTitle = controls.passwordModal.querySelector("h2");
+  if (controls.passwordModal) {
+    controls.passwordTitle = controls.passwordModal.querySelector("h2");
+  }
   controls.passwordInput = $("admin-password-input");
   controls.passwordSubmit = $("admin-password-submit");
   controls.passwordCancel = $("admin-password-cancel");
@@ -325,51 +327,62 @@ function initControls() {
 }
 
 function initListeners() {
-  controls.navItems.forEach((item) => {
+  // Navigation
+  document.querySelectorAll(".nav-item").forEach((item) => {
     item.addEventListener("click", () => {
       switchView(item.dataset.view);
       closeSidebar();
     });
   });
 
-  controls.adminSelect.addEventListener("click", openAdminPassword);
-  controls.outletSelect.addEventListener("click", showOutletSelection);
-  controls.outletCards.forEach((card) => {
-    card.addEventListener("click", () => openOutletPassword(card.dataset.outlet));
-  });
-  controls.outletBack.addEventListener("click", showLoginPanel);
-  controls.passwordSubmit.addEventListener("click", handlePasswordSubmit);
-  controls.passwordCancel.addEventListener("click", closePasswordModal);
-  controls.passwordInput.addEventListener("keydown", (event) => {
-    if (event.key === "Enter") handlePasswordSubmit();
-    if (event.key === "Escape") closePasswordModal();
+  // Login Event Delegation (More stable)
+  document.addEventListener("click", (e) => {
+    const adminBtn = e.target.closest("#admin-select") || (e.target.dataset?.user === 'admin' ? e.target : null);
+    const outletCard = e.target.closest(".outlet-login-card");
+    
+    if (adminBtn) openAdminPassword();
+    if (outletCard) openOutletPassword(outletCard.dataset.outlet);
   });
 
-  controls.menuToggle.addEventListener("click", toggleSidebar);
-  controls.sidebarBackdrop.addEventListener("click", closeSidebar);
-  controls.logoutButton.addEventListener("click", logout);
-  controls.topbarLogoutButton.addEventListener("click", logout);
+  if (controls.outletSelect) {
+     controls.outletSelect.addEventListener("click", (e) => {
+       if(e.target.classList.contains('outlet-login-card')) showOutletSelection();
+     });
+  }
 
-  controls.filterButton.addEventListener("click", () => {
+  if (controls.outletBack) controls.outletBack.addEventListener("click", showLoginPanel);
+  if (controls.passwordSubmit) controls.passwordSubmit.addEventListener("click", handlePasswordSubmit);
+  if (controls.passwordCancel) controls.passwordCancel.addEventListener("click", closePasswordModal);
+  
+  // ... existing listeners with safety checks ...
+  if (controls.menuToggle) controls.menuToggle.addEventListener("click", toggleSidebar);
+  if (controls.sidebarBackdrop) controls.sidebarBackdrop.addEventListener("click", closeSidebar);
+  if (controls.logoutButton) controls.logoutButton.addEventListener("click", logout);
+  if (controls.topbarLogoutButton) controls.topbarLogoutButton.addEventListener("click", logout);
+
+  controls.filterButton?.addEventListener("click", () => {
     state.filterOpen = !state.filterOpen;
     controls.filterPanel.classList.toggle("hidden", !state.filterOpen);
   });
-  controls.exportButton.addEventListener("click", exportCurrentOrders);
+  if (controls.exportButton) controls.exportButton.addEventListener("click", exportCurrentOrders);
 
-  controls.dashboardSearch.addEventListener("input", debounce(renderDashboard, 300));
-  controls.dashboardStatus.addEventListener("change", renderDashboard);
-  controls.dashboardOutlet.addEventListener("change", renderDashboard);
-  controls.dashboardTabs.forEach((button) => {
-    button.addEventListener("click", () => {
-      state.dashboardTab = button.dataset.tab;
-      if (state.dashboardTab === "delivered") {
-        controls.dashboardStatus.value = "Delivered";
-      } else if (controls.dashboardStatus.value === "Delivered") {
-        controls.dashboardStatus.value = "all";
-      }
-      renderDashboard();
+  controls.dashboardSearch?.addEventListener("input", debounce(renderDashboard, 300));
+  controls.dashboardStatus?.addEventListener("change", renderDashboard);
+  controls.dashboardOutlet?.addEventListener("change", renderDashboard);
+  
+  if (controls.dashboardTabs) {
+    controls.dashboardTabs.forEach((button) => {
+      button.addEventListener("click", () => {
+        state.dashboardTab = button.dataset.tab;
+        // Sync with dashboard.js logic
+        if (typeof updateDashboardTab === 'function') {
+          updateDashboardTab(state.dashboardTab);
+        } else {
+          renderDashboard();
+        }
+      });
     });
-  });
+  }
 
   controls.orderPaymentType.addEventListener("change", updatePaymentFields);
   controls.orderForm.addEventListener("submit", handleOrderSubmit);
@@ -429,17 +442,38 @@ async function loadState() {
     localStorage.setItem("whatsbake-version", DATA_VERSION);
   }
 
+  // Restore Auth Session first
+  const savedAuth = localStorage.getItem(AUTH_KEY);
+  if (savedAuth) {
+    try {
+      const auth = JSON.parse(savedAuth);
+      state.loggedIn = auth.loggedIn || false;
+      state.role = auth.role || null;
+      state.outletName = auth.outletName || null;
+    } catch (e) {
+      console.error("Auth restore failed", e);
+    }
+  }
+
   // Google Sheets LIVE LOAD
   if (typeof window.SheetsSync?.loadAll === 'function') {
     const count = await window.SheetsSync.loadAll();
     console.log(`Loaded ${count} live orders from Google Sheets`);
   } else {
-    hydrateSampleState(); // Fallback
+    // Fallback to local storage if Sheets fails
+    const localData = localStorage.getItem(STORAGE_KEY);
+    if (localData) {
+      const parsed = JSON.parse(localData);
+      state.orders = (parsed.orders || []).map(normalizeOrder);
+    } else {
+      hydrateSampleState();
+    }
   }
 
   state.outlets = sampleOutlets.map((outlet) => ({ ...outlet }));
   state.partners = samplePartners.map((partner) => ({ ...partner }));
   state.nextOrderId = getNextOrderId(state.orders);
+}
 
 function hydrateSampleState() {
   const bootstrapOrders = Array.isArray(window.APP_SAMPLE_ORDERS) ? window.APP_SAMPLE_ORDERS : [];
@@ -580,6 +614,10 @@ function canEditFullOrder() {
   return state.role === "admin";
 }
 
+function isOutletUser() {
+  return state.role === "outlet";
+}
+
 function canUpdateOrderStatus(order) {
   if (state.role === "admin") return true;
   return state.role === "outlet" && order.outlet === state.outletName;
@@ -596,15 +634,11 @@ function updateOrderStatus(orderId, newStatus) {
 
   if (order.status === "Delivered" && previousStatus !== "Delivered") {
     order.deliveredAt = new Date().toISOString();
+    state.dashboardTab = "delivered";
   }
 
   if (order.status !== "Delivered" && canEditFullOrder()) {
     order.deliveredAt = "";
-  }
-
-  if (order.status === "Delivered" && previousStatus !== "Delivered") {
-    state.dashboardTab = "delivered";
-    controls.dashboardStatus.value = "Delivered";
   }
 
   saveState();
@@ -948,6 +982,11 @@ function renderApp() {
 }
 
 function renderDashboard() {
+  // If dashboard.js is loaded, use its more detailed view
+  if (typeof renderDashboardView === 'function') {
+    renderDashboardView();
+  }
+
   const visibleOrders = getVisibleOrders();
   const orders = getDashboardOrders();
   controls.dashboardTabs.forEach((button) => {
@@ -1409,88 +1448,120 @@ function renderOutletReports() {
   controls.outletReportPending.textContent = outletOrders.filter(isOrderOpen).length;
 }
 
-function handleOrderSubmit(event) {
+/**
+ * REBUILT DATA ENTRY LOGIC
+ * Ensures clean validation, automatic ID generation, and multi-sync (Local + Sheets)
+ */
+async function handleOrderSubmit(event) {
   event.preventDefault();
-  if (!canEditFullOrder()) {
-    showToast("Only admin can create new orders.");
-    return;
+  if (!state.loggedIn) return showToast("Please login first.");
+
+  try {
+    // 1. Collect Data
+    const orderData = {
+      customer: controls.orderCustomer.value.trim(),
+      mobile: controls.orderMobile.value.trim(),
+      item: controls.orderItem.value.trim(),
+      amount: parseFloat(controls.orderAmount.value) || 0,
+      outlet: state.role === "outlet" ? state.outletName : controls.orderOutlet.value,
+      deliveryDate: controls.orderDeliveryDate.value,
+      deliveryTime: getTimeFromSelects(controls.orderDeliveryTimeHour, controls.orderDeliveryTimeMinute, controls.orderDeliveryTimeAmpm)
+    };
+
+    // 2. Strict Validation
+    if (!orderData.customer || !orderData.item || !orderData.deliveryDate) {
+      return showToast("Fill mandatory fields: Customer, Item, and Delivery Date.");
+    }
+    if (orderData.mobile.length < 10) return showToast("Enter a valid 10-digit mobile number.");
+    if (orderData.amount <= 0) return showToast("Amount must be greater than 0.");
+
+    // 3. Payment Calculation
+    let cash = 0, online = 0;
+    const pType = controls.orderPaymentType.value;
+    if (pType === "Cash") cash = orderData.amount;
+    else if (pType === "UPI" || pType === "Card") online = orderData.amount;
+    else if (pType === "Part Payment") {
+      cash = parseFloat(controls.orderCash.value) || 0;
+      online = parseFloat(controls.orderOnline.value) || 0;
+      if (Math.abs((cash + online) - orderData.amount) > 1) {
+        return showToast(`Total (${orderData.amount}) must match Cash+Online (${cash + online})`);
+      }
+    }
+
+    // 4. Object Creation using normalizeOrder for consistency
+    const newOrder = normalizeOrder({
+      id: String(getNextOrderId(state.orders)),
+      ...orderData,
+      quantity: controls.orderQuantity.value.trim() || "1 kg",
+      paymentType: pType,
+      paymentStatus: controls.orderPaymentStatus.value,
+      deliveryType: controls.orderDeliveryType.value,
+      priority: controls.orderPriority.value,
+      orderDate: controls.orderDate.value,
+      orderTime: getTimeFromSelects(controls.orderTimeHour, controls.orderTimeMinute, controls.orderTimeAmpm),
+      assignedPartnerId: controls.orderPartner.value,
+      informedBy: controls.orderInformedBy.value.trim(),
+      address: controls.orderAddress.value.trim(),
+      fullAddress: controls.orderFullAddress.value.trim(),
+      remark: controls.orderRemark.value.trim(),
+      cash,
+      online,
+      status: "Preparing"
+    });
+
+    // 5. Save Sequence
+    state.orders.unshift(newOrder);
+    await saveState(); // This updates LocalStorage and Google Sheets
+
+    // 6. UI Update
+    showToast(`Order #${newOrder.id} successfully created!`);
+    prepareOrderForm();
+    renderApp();
+    switchView("dashboard");
+
+    // 7. Post-save Action
+    setTimeout(() => {
+      if (confirm("Would you like to send WhatsApp confirmation?")) {
+        openWhatsappConfirmation(newOrder.id);
+      }
+    }, 500);
+
+  } catch (err) {
+    console.error("Order Creation Error:", err);
+    showToast("Error saving order. Please try again.");
   }
-
-  const customer = controls.orderCustomer.value.trim();
-  const amount = Number(controls.orderAmount.value || 0);
-  const mobile = controls.orderMobile.value.trim();
-  const item = controls.orderItem.value.trim();
-  const deliveryDate = controls.orderDeliveryDate.value;
-  const deliveryTime = getTimeFromSelects(controls.orderDeliveryTimeHour, controls.orderDeliveryTimeMinute, controls.orderDeliveryTimeAmpm);
-
-  if (!customer || !item || !deliveryDate || !deliveryTime || !mobile || !amount) {
-    showToast("Please fill customer, mobile, amount, item, delivery date and delivery time.");
-    return;
-  }
-
-  const paymentType = controls.orderPaymentType.value;
-  const cash = paymentType === "Part Payment" ? Number(controls.orderCash.value || 0) : paymentType === "Cash" ? amount : 0;
-  const online = paymentType === "Part Payment" ? Number(controls.orderOnline.value || 0) : paymentType === "UPI" ? amount : 0;
-
-  // Always continue serially from the latest existing order id.
-  state.nextOrderId = getNextOrderId(state.orders);
-
-  const newOrder = normalizeOrder({
-    id: String(state.nextOrderId++),
-    customer,
-    mobile,
-    outlet: controls.orderOutlet.value,
-    item,
-    quantity: controls.orderQuantity.value.trim() || "1 kg",
-    amount,
-    paymentType,
-    paymentStatus: controls.orderPaymentStatus.value,
-    status: "Preparing",
-    deliveryType: controls.orderDeliveryType.value,
-    priority: controls.orderPriority.value,
-    orderDate: controls.orderDate.value,
-    orderTime: getTimeFromSelects(controls.orderTimeHour, controls.orderTimeMinute, controls.orderTimeAmpm),
-    deliveryDate,
-    deliveryTime,
-    assignedPartnerId: controls.orderPartner.value,
-    informedBy: controls.orderInformedBy.value.trim(),
-    address: controls.orderAddress.value.trim(),
-    fullAddress: controls.orderFullAddress.value.trim(),
-    remark: controls.orderRemark.value.trim(),
-    cash,
-    online,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  });
-
-  state.orders.unshift(newOrder);
-  saveState();
-  prepareOrderForm();
-  renderApp();
-  switchView("dashboard");
-  showToast(`Order #${newOrder.id} created successfully.`);
-  openWhatsappConfirmation(newOrder.id);
 }
 
 function prepareOrderForm() {
-  state.nextOrderId = getNextOrderId(state.orders);
+  if (!controls.orderForm) return;
+  controls.orderForm.reset();
 
-  if (state.role === "admin") {
-    controls.orderForm.reset();
-    controls.orderDate.value = new Date().toISOString().slice(0, 10);
-    controls.orderDeliveryDate.value = new Date().toISOString().slice(0, 10);
-    const now = new Date();
-    controls.orderTimeHour.value = String(now.getHours() % 12 || 12).padStart(2, '0');
-    controls.orderTimeMinute.value = String(now.getMinutes()).padStart(2, '0');
-    controls.orderTimeAmpm.value = now.getHours() >= 12 ? 'PM' : 'AM';
-    controls.orderDeliveryTimeHour.value = String(now.getHours() % 12 || 12).padStart(2, '0');
-    controls.orderDeliveryTimeMinute.value = String(now.getMinutes()).padStart(2, '0');
-    controls.orderDeliveryTimeAmpm.value = now.getHours() >= 12 ? 'PM' : 'AM';
-    controls.orderPaymentStatus.value = "Pending";
-    controls.orderPriority.value = "Normal";
-    controls.orderPartner.value = "";
+  // Auto-set serial ID
+  controls.orderNumber.value = String(getNextOrderId(state.orders));
+
+  // Defaults for dates
+  const today = new Date().toISOString().slice(0, 10);
+  controls.orderDate.value = today;
+  controls.orderDeliveryDate.value = today;
+
+  // Defaults for times
+  const now = new Date();
+  const hh = String(now.getHours() % 12 || 12).padStart(2, '0');
+  const mm = String(Math.ceil(now.getMinutes() / 5) * 5).padStart(2, '0');
+  const ampm = now.getHours() >= 12 ? 'PM' : 'AM';
+
+  [controls.orderTimeHour, controls.orderDeliveryTimeHour].forEach(el => el.value = hh);
+  [controls.orderTimeMinute, controls.orderDeliveryTimeMinute].forEach(el => el.value = mm === "60" ? "00" : mm);
+  [controls.orderTimeAmpm, controls.orderDeliveryTimeAmpm].forEach(el => el.value = ampm);
+
+  // Role-based outlet locking
+  if (state.role === "outlet") {
+    controls.orderOutlet.value = state.outletName;
+    controls.orderOutlet.disabled = true;
+  } else {
+    controls.orderOutlet.disabled = false;
   }
-  controls.orderNumber.value = String(state.nextOrderId);
+
   updatePaymentFields();
 }
 
@@ -2014,7 +2085,7 @@ function handlePasswordSubmit() {
   state.pendingOutlet = null;
   saveAuth();
   closePasswordModal();
-  showAppShell();
+  setTimeout(showAppShell, 100); // Small delay to ensure state is set
   showToast(state.role === "admin" ? "Admin login successful." : `${state.outletName} login successful.`);
 }
 
@@ -2237,7 +2308,7 @@ function stopNotificationSound() {
   notificationGain = null;
 }
 
-function init() {
+async function init() {
   initControls();
   initListeners();
   
@@ -2246,7 +2317,7 @@ function init() {
     window.SheetsSync.start();
   }
   
-  loadState();
+  await loadState();
   prepareOrderForm();
   renderApp();
   startDeliveryReminderChecker();
